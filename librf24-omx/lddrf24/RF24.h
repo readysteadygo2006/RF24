@@ -16,7 +16,7 @@
 #define __RF24_H__
 
 #include "RF24_config.h"
-#include <wiringPi.h>
+#include "wiringConsts.h"
 
 /**
  * Power Amplifier level.
@@ -54,6 +54,19 @@ struct RF24
    */
   /**@{*/
 
+	uint8_t ce_pin; /**< "Chip Enable" pin, activates the RX or TX role, unused on rpi */
+	char* spidevice;
+	uint32_t spispeed;
+	uint8_t csn_pin; /**< SPI Chip select */
+	bool wide_band; /* 2Mbs data rate in use? */
+	bool p_variant; /* False for RF24L01 and true for RF24L01P */
+	uint8_t payload_size; /**< Fixed size of payloads */
+	bool ack_payload_available; /**< Whether there is an ack payload waiting */
+	bool dynamic_payloads_enabled; /**< Whether dynamic payloads are enabled. */
+	uint8_t ack_payload_length; /**< Dynamic size of pending ack payload. */
+	uint64_t pipe0_reading_address; /**< Last address set on pipe 0 for reading. */
+
+	SPI* spi;
   /**
    * Set chip select pin
    *
@@ -183,7 +196,8 @@ struct RF24
    * @param reg Which register. Use constants from nRF24L01.h
    * @param qty How many successive registers to print
    */
-  void (*print_byte_register)(const char* name, uint8_t reg, uint8_t qty = 1);
+  void (*print_byte_register_3)(const char* name, uint8_t reg);
+  void (*print_byte_register_4)(const char* name, uint8_t reg, uint8_t qty);
 
   /**
    * Print the name and value of a 40-bit address register to stdout
@@ -196,7 +210,8 @@ struct RF24
    * @param reg Which register. Use constants from nRF24L01.h
    * @param qty How many successive registers to print
    */
-  void (*print_address_register)(const char* name, uint8_t reg, uint8_t qty = 1);
+  void (*print_address_register_3)(const char* name, uint8_t reg);
+  void (*print_address_register_4)(const char* name, uint8_t reg, uint8_t qty);
 
   /**
    * Turn on or off the special features of the chip
@@ -224,7 +239,7 @@ struct RF24
    * @param _cspin The pin attached to Chip SPI chipSelect
    */
   void (*RF24_2)(uint8_t _cepin, uint8_t _cspin);
-  void (*RF24_3)(string _spidevice, uint32_t _spispeed, uint8_t _cepin);
+  void (*RF24_3)(char* _spidevice, uint32_t _spispeed, uint8_t _cepin);
 
   /**
    * Begin operation of the chip
@@ -429,7 +444,7 @@ struct RF24
    * @return true if the hardware is nRF24L01+ (or compatible) and false
    * if its not.
    */
-  bool isPVariant(void) ;
+  bool (*isPVariant)(void) ;
 
   /**
    * Enable or disable auto-acknowlede packets
@@ -439,7 +454,7 @@ struct RF24
    *
    * @param enable Whether to enable (true) or disable (false) auto-acks
    */
-  void setAutoAck(bool enable);
+  void (*setAutoAck_1)(bool enable);
 
   /**
    * Enable or disable auto-acknowlede packets on a per pipeline basis.
@@ -450,7 +465,7 @@ struct RF24
    * @param pipe Which pipeline to modify
    * @param enable Whether to enable (true) or disable (false) auto-acks
    */
-  void setAutoAck( uint8_t pipe, bool enable ) ;
+  void (*setAutoAck_2)( uint8_t pipe, bool enable ) ;
 
   /**
    * Set Power Amplifier (PA) level to one of four levels.
@@ -461,7 +476,7 @@ struct RF24
    *
    * @param level Desired PA level.
    */
-  void setPALevel( rf24_pa_dbm_e level ) ;
+  void (*setPALevel)( rf24_pa_dbm_e level ) ;
 
   /**
    * Fetches the current PA level.
@@ -471,7 +486,7 @@ struct RF24
    * by the enum mnemonics are negative dBm. See setPALevel for
    * return value descriptions.
    */
-  rf24_pa_dbm_e getPALevel( void ) ;
+  rf24_pa_dbm_e (*getPALevel)( void ) ;
 
   /**
    * Set the transmission data rate
@@ -481,7 +496,7 @@ struct RF24
    * @param speed RF24_250KBPS for 250kbs, RF24_1MBPS for 1Mbps, or RF24_2MBPS for 2Mbps
    * @return true if the change was successful
    */
-  bool setDataRate(rf24_datarate_e speed);
+  bool (*setDataRate)(rf24_datarate_e speed);
   
   /**
    * Fetches the transmission data rate
@@ -490,27 +505,27 @@ struct RF24
    * is one of 250kbs, RF24_1MBPS for 1Mbps, or RF24_2MBPS, as defined in the
    * rf24_datarate_e enum.
    */
-  rf24_datarate_e getDataRate( void ) ;
+  rf24_datarate_e (*getDataRate)( void ) ;
 
   /**
    * Set the CRC length
    *
    * @param length RF24_CRC_8 for 8-bit or RF24_CRC_16 for 16-bit
    */
-  void setCRCLength(rf24_crclength_e length);
+  void (*setCRCLength)(rf24_crclength_e length);
 
   /**
    * Get the CRC length
    *
    * @return RF24_DISABLED if disabled or RF24_CRC_8 for 8-bit or RF24_CRC_16 for 16-bit
    */
-  rf24_crclength_e getCRCLength(void);
+  rf24_crclength_e (*getCRCLength)(void);
 
   /**
    * Disable CRC validation
    *
    */
-  void disableCRC( void ) ;
+  void (*disableCRC)( void ) ;
 
   /**@}*/
   /**
@@ -525,7 +540,7 @@ struct RF24
    *
    * @warning Does nothing if stdout is not defined.  See fdevopen in stdio.h
    */
-  void printDetails(void);
+  void (*printDetails)(void);
 
   /**
    * Enter low-power mode
@@ -533,14 +548,14 @@ struct RF24
    * To return to normal power mode, either write() some data or
    * startListening, or powerUp().
    */
-  void powerDown(void);
+  void (*powerDown)(void);
 
   /**
    * Leave low-power mode - making radio more responsive
    *
    * To return to low power mode, call powerDown().
    */
-  void powerUp(void) ;
+  void (*powerUp)(void) ;
 
   /**
    * Test whether there are bytes available to be read
@@ -551,7 +566,7 @@ struct RF24
    * @param[out] pipe_num Which pipe has the payload available
    * @return True if there is a payload available, false if none is
    */
-  bool available(uint8_t* pipe_num);
+  bool (*available_1)(uint8_t* pipe_num);
 
   /**
    * Non-blocking write to the open writing pipe
@@ -566,7 +581,7 @@ struct RF24
    * @param len Number of bytes to be sent
    * @return True if the payload was delivered successfully false if not
    */
-  void startWrite( const void* buf, uint8_t len );
+  void (*startWrite)( const void* buf, uint8_t len );
 
   /**
    * Write an ack payload for the specified pipe
@@ -582,7 +597,7 @@ struct RF24
    * @param len Length of the data to send, up to 32 bytes max.  Not affected
    * by the static payload set by setPayloadSize().
    */
-  void writeAckPayload(uint8_t pipe, const void* buf, uint8_t len);
+  void (*writeAckPayload)(uint8_t pipe, const void* buf, uint8_t len);
 
   /**
    * Determine if an ack payload was received in the most recent call to
@@ -597,7 +612,7 @@ struct RF24
    *
    * @return True if an ack payload is available.
    */
-  bool isAckPayloadAvailable(void);
+  bool (*isAckPayloadAvailable)(void);
 
   /**
    * Call this when you get an interrupt to find out why
@@ -609,7 +624,7 @@ struct RF24
    * @param[out] tx_fail The send failed, too many retries (MAX_RT)
    * @param[out] rx_ready There is a message waiting to be read (RX_DS)
    */
-  void whatHappened(bool& tx_ok,bool& tx_fail,bool& rx_ready);
+  void (*whatHappened)(bool& tx_ok,bool& tx_fail,bool& rx_ready);
 
   /**
    * Test whether there was a carrier on the line for the
@@ -619,7 +634,7 @@ struct RF24
    *
    * @return true if was carrier, false if not
    */
-  bool testCarrier(void);
+  bool (*testCarrier)(void);
 
   /**
    * Test whether a signal (carrier or otherwise) greater than
@@ -631,10 +646,12 @@ struct RF24
    *
    * @return true if signal => -64dBm, false if not
    */
-  bool testRPD(void) ;
+  bool (*testRPD)(void) ;
 
   /**@}*/
 };
+
+typedef struct RF24 RF24;
 
 /**
  * @example GettingStarted.pde

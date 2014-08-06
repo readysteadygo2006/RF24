@@ -12,7 +12,7 @@
 
 static struct SPI *this;
 
-SPI_SPI() {
+void SPI_SPI() {
 	
 //	this->device = "/dev/spidev0.0";;
 	this->bits = 8;
@@ -116,7 +116,7 @@ uint8_t SPI_transfer(uint8_t tx_)
 
 	uint8_t rx[ARRAY_SIZE(tx)] = {0};
 	struct spi_ioc_transfer tr;
-	tr.tx_buf = (unsigned long)tx;
+	tr.tx_buf = (unsigned long)tx;s
 	tr.rx_buf = (unsigned long)rx;
 	tr.len = ARRAY_SIZE(tx);
 	tr.delay_usecs = 0;

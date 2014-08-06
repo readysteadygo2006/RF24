@@ -21,6 +21,8 @@
 #else 
 //#warning "Arduino disabled"
 #include "spi.h"
+#include "gpio.h"
+#include "compatibility.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <time.h>
@@ -32,6 +34,8 @@
 #endif
 
 #include <stddef.h>
+
+
 
 // Stuff that is normally provided by Arduino
 //#ifdef ARDUINO
@@ -83,6 +87,16 @@ typedef uint16_t prog_uint16_t;
 #define PROGMEM
 #define pgm_read_word(p) (*(p)) 
 #define PRIPSTR "%s"
+
+// Function, constant map as a result of migrating from Arduino
+#define LOW GPIO::OUTPUT_LOW
+#define HIGH GPIO::OUTPUT_HIGH
+#define INPUT GPIO::DIRECTION_IN
+#define OUTPUT GPIO::DIRECTION_OUT
+#define digitalWrite(pin, value) GPIO::write(pin, value)
+#define pinMode(pin, direction) GPIO::open(pin, direction)
+#define delay(milisec) __msleep(milisec)
+#define delayMicroseconds(usec) __usleep(usec)
 
 //#endif
 
